@@ -2,6 +2,18 @@
 Changelog
 =========
 
+``polib2`` changelog
+====================
+
+Version 0.9.0 (2021-01-7)
+-------------------------
+ - Forked from polib to github, and rename to polib2.
+ - Now for Python3 only. Dropped Python2 support.
+
+
+``polib`` changelog
+===================
+
 Version 1.1.0 (2017/11/27)
 --------------------------
  - Fixed entries sorting when generating mo file (Fixes #78)

@@ -13,7 +13,7 @@ clean:
 
 lint:
 	@type pycodestyle >/dev/null 2>&1 || { echo >&2 "Please install pycodestyle package."; exit 1; }
-	@pycodestyle -r polib.py && { echo >&2 "PEP8: congrats, everything is clean !"; }
+	@pycodestyle -r polib2.py && { echo >&2 "PEP8: congrats, everything is clean !"; }
 
 test:
 	@type tox >/dev/null 2>&1 && { tox; } || { ./runtests.sh; }

@@ -17,25 +17,23 @@ import codecs
 import os
 import re
 import struct
-import sys
 import textwrap
+import io
 
-try:
-    import io
-except ImportError:
-    # replacement of io.open() for python < 2.6
-    # we use codecs instead
-    class io(object):
-        @staticmethod
-        def open(fpath, mode='r', encoding=None):
-            return codecs.open(fpath, mode, encoding)
-
+# try:
+#     import io
+# except ImportError:
+#     # replacement of io.open() for python < 2.6
+#     # we use codecs instead
+#     class io(object):
+#         @staticmethod
+#         def open(fpath, mode='r', encoding=None):
+#             return codecs.open(fpath, mode, encoding)
 
 __author__ = 'David Jean Louis <izimobil@gmail.com>'
-__version__ = '1.1.0'
+__version__ = '0.9.0'
 __all__ = ['pofile', 'POFile', 'POEntry', 'mofile', 'MOFile', 'MOEntry',
            'default_encoding', 'escape', 'unescape', 'detect_encoding', ]
-
 
 # the default encoding to use when encoding cannot be detected
 default_encoding = 'utf-8'
@@ -43,25 +41,32 @@ default_encoding = 'utf-8'
 # python 2/3 compatibility helpers {{{
 
 
-if sys.version_info[:2] < (3, 0):
-    PY3 = False
-    text_type = unicode
+# if sys.version_info[:2] < (3, 0):
+#     PY3 = False
+#     text_type = unicode
+#
+#     def b(s):
+#         return s
+#
+#     def u(s):
+#         return unicode(s, "unicode_escape")
 
-    def b(s):
-        return s
+# else:
 
-    def u(s):
-        return unicode(s, "unicode_escape")
+# PY3 = True
+text_type = str
 
-else:
-    PY3 = True
-    text_type = str
 
-    def b(s):
-        return s.encode("latin-1")
+def b(s):
+    return s.encode("latin-1")
 
-    def u(s):
-        return s
+
+'''
+def u(s):
+    return s
+'''
+
+
 # }}}
 # _pofile_or_mofile {{{
 
@@ -87,6 +92,8 @@ def _pofile_or_mofile(f, type, **kwargs):
     instance = parser.parse()
     instance.wrapwidth = kwargs.get('wrapwidth', 78)
     return instance
+
+
 # }}}
 # _is_file {{{
 
@@ -105,6 +112,8 @@ def _is_file(filename_or_contents):
         return os.path.exists(filename_or_contents)
     except (ValueError, UnicodeEncodeError):
         return False
+
+
 # }}}
 # function pofile() {{{
 
@@ -137,6 +146,8 @@ def pofile(pofile, **kwargs):
         instance).
     """
     return _pofile_or_mofile(pofile, 'pofile', **kwargs)
+
+
 # }}}
 # function mofile() {{{
 
@@ -170,6 +181,8 @@ def mofile(mofile, **kwargs):
         instance).
     """
     return _pofile_or_mofile(mofile, 'mofile', **kwargs)
+
+
 # }}}
 # function detect_encoding() {{{
 
@@ -190,7 +203,8 @@ def detect_encoding(file, binary_mode=False):
         boolean, set this to True if ``file`` is a mo file.
     """
     PATTERN = r'"?Content-Type:.+? charset=([\w_\-:\.]+)'
-    rxt = re.compile(u(PATTERN))
+    # rxt = re.compile(u(PATTERN))
+    rxt = re.compile(PATTERN)
     rxb = re.compile(b(PATTERN))
 
     def charset_exists(charset):
@@ -209,15 +223,15 @@ def detect_encoding(file, binary_mode=False):
                 return enc
     else:
         # For PY3, always treat as binary
-        if binary_mode or PY3:
-            mode = 'rb'
-            rx = rxb
-        else:
-            mode = 'r'
-            rx = rxt
+        # if binary_mode or PY3:
+        mode = 'rb'
+        rx = rxb
+        # else:
+        #     mode = 'r'
+        #     rx = rxt
         f = open(file, mode)
-        for l in f.readlines():
-            match = rx.search(l)
+        for lll in f.readlines():
+            match = rx.search(lll)
             if match:
                 f.close()
                 enc = match.group(1).strip()
@@ -227,6 +241,8 @@ def detect_encoding(file, binary_mode=False):
                     return enc
         f.close()
     return default_encoding
+
+
 # }}}
 # function escape() {{{
 
@@ -236,11 +252,13 @@ def escape(st):
     Escapes the characters ``\\\\``, ``\\t``, ``\\n``, ``\\r`` and ``"`` in
     the given string ``st`` and returns it.
     """
-    return st.replace('\\', r'\\')\
-             .replace('\t', r'\t')\
-             .replace('\r', r'\r')\
-             .replace('\n', r'\n')\
-             .replace('\"', r'\"')
+    return st.replace('\\', r'\\') \
+        .replace('\t', r'\t') \
+        .replace('\r', r'\r') \
+        .replace('\n', r'\n') \
+        .replace('\"', r'\"')
+
+
 # }}}
 # function unescape() {{{
 
@@ -250,6 +268,7 @@ def unescape(st):
     Unescapes the characters ``\\\\``, ``\\t``, ``\\n``, ``\\r`` and ``"`` in
     the given string ``st`` and returns it.
     """
+
     def unescape_repl(m):
         m = m.group(1)
         if m == 'n':
@@ -261,7 +280,10 @@ def unescape(st):
         if m == '\\':
             return '\\'
         return m  # handles escaped double quote
+
     return re.sub(r'\\(\\|n|t|r|")', unescape_repl, st)
+
+
 # }}}
 # function natural_sort() {{{
 
@@ -271,6 +293,7 @@ def natural_sort(lst):
     Sort naturally the given list.
     Credits: http://stackoverflow.com/a/4836734
     """
+
     def convert(text):
         return int(text) if text.isdigit() else text.lower()
 
@@ -278,6 +301,7 @@ def natural_sort(lst):
         return [convert(c) for c in re.split('([0-9]+)', key)]
 
     return sorted(lst, key=alphanum_key)
+
 
 # }}}
 # class _BaseFile {{{
@@ -338,18 +362,20 @@ class _BaseFile(list):
             ret.append(entry.__unicode__(self.wrapwidth))
         for entry in self.obsolete_entries():
             ret.append(entry.__unicode__(self.wrapwidth))
-        ret = u('\n').join(ret)
+        # ret = u('\n').join(ret)
+        ret = '\n'.join(ret)
         return ret
 
-    if PY3:
-        def __str__(self):
-            return self.__unicode__()
-    else:
-        def __str__(self):
-            """
-            Returns the string representation of the file.
-            """
-            return unicode(self).encode(self.encoding)
+    # if PY3:
+    def __str__(self):
+        return self.__unicode__()
+
+    # else:
+    #     def __str__(self):
+    #         """
+    #         Returns the string representation of the file.
+    #         """
+    #         return unicode(self).encode(self.encoding)
 
     def __contains__(self, entry):
         """
@@ -364,8 +390,11 @@ class _BaseFile(list):
         ``entry``
             an instance of :class:`~polib._BaseEntry`.
         """
-        return self.find(entry.msgid, by='msgid', msgctxt=entry.msgctxt) \
-            is not None
+        return self.find(
+            entry.msgid,
+            by='msgid',
+            msgctxt=entry.msgctxt
+        ) is not None
 
     def __eq__(self, other):
         return str(self) == str(other)
@@ -536,6 +565,11 @@ class _BaseFile(list):
     def to_binary(self):
         """
         Return the binary representation of the file.
+
+        if PY3 and sys.version_info.minor > 1:  # python 3.2 or superior
+            output += array.array("i", offsets).tobytes()
+        else:
+            output += array.array("i", offsets).tostring()
         """
         offsets = []
         entries = self.translated_entries()
@@ -551,6 +585,7 @@ class _BaseFile(list):
                 return -1
             else:
                 return 0
+
         # add metadata entry
         entries.sort(key=lambda o: o.msgid_with_context.encode('utf-8'))
         mentry = self.metadata_as_entry()
@@ -607,10 +642,8 @@ class _BaseFile(list):
             0, keystart
 
         )
-        if PY3 and sys.version_info.minor > 1:  # python 3.2 or superior
-            output += array.array("i", offsets).tobytes()
-        else:
-            output += array.array("i", offsets).tostring()
+
+        output += array.array("i", offsets).tobytes()
         output += ids
         output += strs
         return output
@@ -623,6 +656,8 @@ class _BaseFile(list):
         if isinstance(mixed, text_type):
             mixed = mixed.encode(self.encoding)
         return mixed
+
+
 # }}}
 # class POFile {{{
 
@@ -731,6 +766,8 @@ class POFile(_BaseFile):
         for entry in self:
             if entry.msgid_with_context not in refpot_msgids:
                 entry.obsolete = True
+
+
 # }}}
 # class MOFile {{{
 
@@ -804,6 +841,8 @@ class MOFile(_BaseFile):
         Convenience method to keep the same interface with POFile instances.
         """
         return []
+
+
 # }}}
 # class _BaseEntry {{{
 
@@ -882,18 +921,20 @@ class _BaseEntry(object):
             ret += self._str_field("msgstr", delflag, "", self.msgstr,
                                    wrapwidth)
         ret.append('')
-        ret = u('\n').join(ret)
+        # ret = u('\n').join(ret)
+        ret = '\n'.join(ret)
         return ret
 
-    if PY3:
-        def __str__(self):
-            return self.__unicode__()
-    else:
-        def __str__(self):
-            """
-            Returns the string representation of the entry.
-            """
-            return unicode(self).encode(self.encoding)
+    # if PY3:
+    def __str__(self):
+        return self.__unicode__()
+
+    # else:
+    #     def __str__(self):
+    #         """
+    #         Returns the string representation of the entry.
+    #         """
+    #         return unicode(self).encode(self.encoding)
 
     def __eq__(self, other):
         return str(self) == str(other)
@@ -933,6 +974,8 @@ class _BaseEntry(object):
         for line in lines:
             ret.append('%s"%s"' % (delflag, escape(line)))
         return ret
+
+
 # }}}
 # class POEntry {{{
 
@@ -1019,7 +1062,7 @@ class POEntry(_BaseEntry):
                 # what we want for filenames, so the dirty hack is to
                 # temporally replace hyphens with a char that a file cannot
                 # contain, like "*"
-                ret += [l.replace('*', '-') for l in wrap(
+                ret += [lll2.replace('*', '-') for lll2 in wrap(
                     filestr.replace('-', '*'),
                     wrapwidth,
                     initial_indent='#: ',
@@ -1046,7 +1089,8 @@ class POEntry(_BaseEntry):
                 ret += self._str_field(f, prefix, "", val, wrapwidth)
 
         ret.append(_BaseEntry.__unicode__(self, wrapwidth))
-        ret = u('\n').join(ret)
+        # ret = u('\n').join(ret)
+        ret = '\n'.join(ret)
         return ret
 
     def __cmp__(self, other):
@@ -1181,6 +1225,8 @@ class POEntry(_BaseEntry):
 
     def __hash__(self):
         return hash((self.msgid, self.msgstr))
+
+
 # }}}
 # class MOEntry {{{
 
@@ -1189,6 +1235,7 @@ class MOEntry(_BaseEntry):
     """
     Represents a mo file entry.
     """
+
     def __init__(self, *args, **kwargs):
         """
         Constructor, accepts the following keyword arguments,
@@ -1217,6 +1264,7 @@ class MOEntry(_BaseEntry):
 
     def __hash__(self):
         return hash((self.msgid, self.msgstr))
+
 
 # }}}
 # class _POFileParser {{{
@@ -1291,22 +1339,22 @@ class _POFileParser(object):
         all = ['st', 'he', 'gc', 'oc', 'fl', 'ct', 'pc', 'pm', 'pp', 'tc',
                'ms', 'mp', 'mx', 'mi']
 
-        self.add('tc', ['st', 'he'],                                     'he')
+        self.add('tc', ['st', 'he'], 'he')
         self.add('tc', ['gc', 'oc', 'fl', 'tc', 'pc', 'pm', 'pp', 'ms',
-                        'mp', 'mx', 'mi'],                               'tc')
-        self.add('gc', all,                                              'gc')
-        self.add('oc', all,                                              'oc')
-        self.add('fl', all,                                              'fl')
-        self.add('pc', all,                                              'pc')
-        self.add('pm', all,                                              'pm')
-        self.add('pp', all,                                              'pp')
+                        'mp', 'mx', 'mi'], 'tc')
+        self.add('gc', all, 'gc')
+        self.add('oc', all, 'oc')
+        self.add('fl', all, 'fl')
+        self.add('pc', all, 'pc')
+        self.add('pm', all, 'pm')
+        self.add('pp', all, 'pp')
         self.add('ct', ['st', 'he', 'gc', 'oc', 'fl', 'tc', 'pc', 'pm',
-                        'pp', 'ms', 'mx'],                               'ct')
+                        'pp', 'ms', 'mx'], 'ct')
         self.add('mi', ['st', 'he', 'gc', 'oc', 'fl', 'ct', 'tc', 'pc',
-                 'pm', 'pp', 'ms', 'mx'],                                'mi')
-        self.add('mp', ['tc', 'gc', 'pc', 'pm', 'pp', 'mi'],             'mp')
-        self.add('ms', ['mi', 'mp', 'tc'],                               'ms')
-        self.add('mx', ['mi', 'mx', 'mp', 'tc'],                         'mx')
+                        'pm', 'pp', 'ms', 'mx'], 'mi')
+        self.add('mp', ['tc', 'gc', 'pc', 'pm', 'pp', 'mi'], 'mp')
+        self.add('ms', ['mi', 'mp', 'tc'], 'ms')
+        self.add('mx', ['mi', 'mx', 'mp', 'tc'], 'mx')
         self.add('mc', ['ct', 'mi', 'mp', 'ms', 'mx', 'pm', 'pp', 'pc'], 'mc')
 
     def parse(self):
@@ -1437,7 +1485,7 @@ class _POFileParser(object):
                               (fpath, self.current_line))
 
         if self.current_entry and len(tokens) > 0 and \
-           not tokens[0].startswith('#'):
+                not tokens[0].startswith('#'):
             # since entries are added when another entry is found, we must add
             # the last entry here (only if there are lines). Trailing comments
             # are ignored
@@ -1645,6 +1693,8 @@ class _POFileParser(object):
             self.current_entry.previous_msgctxt += token
         # don't change the current state
         return False
+
+
 # }}}
 # class _MOFileParser {{{
 
@@ -1741,7 +1791,8 @@ class _MOFileParser(object):
                             v = tokens[1].decode(encoding)
                             metadata[k] = v.strip()
                         except IndexError:
-                            metadata[k] = u('')
+                            # metadata[k] = u('')
+                            metadata[k] = ''
                 self.instance.metadata = metadata
                 continue
             # test if we have a plural entry
@@ -1791,6 +1842,8 @@ class _MOFileParser(object):
         if len(tup) == 1:
             return tup[0]
         return tup
+
+
 # }}}
 # class TextWrapper {{{
 
@@ -1800,6 +1853,7 @@ class TextWrapper(textwrap.TextWrapper):
     Subclass of textwrap.TextWrapper that backport the
     drop_whitespace option.
     """
+
     def __init__(self, *args, **kwargs):
         drop_whitespace = kwargs.pop('drop_whitespace', True)
         textwrap.TextWrapper.__init__(self, *args, **kwargs)
@@ -1874,6 +1928,8 @@ class TextWrapper(textwrap.TextWrapper):
                 lines.append(indent + ''.join(cur_line))
 
         return lines
+
+
 # }}}
 # function wrap() {{{
 
@@ -1882,8 +1938,8 @@ def wrap(text, width=70, **kwargs):
     """
     Wrap a single paragraph of text, returning a list of wrapped lines.
     """
-    if sys.version_info < (2, 6):
-        return TextWrapper(width=width, **kwargs).wrap(text)
+    # if sys.version_info < (2, 6):
+    #     return TextWrapper(width=width, **kwargs).wrap(text)
     return textwrap.wrap(text, width=width, **kwargs)
 
 # }}}
